@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Aplikasi Kas Bayu Titip</title>
+<title>LAPORAN ARUS KEUANGAN</title>
 
 <!-- JSPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -19,8 +19,45 @@ body{
     font-family:Arial;
 }
 
+/* LOGIN KANAN ATAS */
+.login-top{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:10px;
+}
+
+.login-box{
+    display:flex;
+    gap:5px;
+    align-items:center;
+    background:white;
+    padding:8px;
+    border-radius:8px;
+    box-shadow:0 0 5px rgba(0,0,0,0.1);
+}
+
+.login-box input{
+    width:100px;
+    padding:6px;
+    font-size:12px;
+}
+
+.login-box button{
+    padding:6px 10px;
+    font-size:12px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+}
+
+.login-box button:hover{
+    background:#1d4ed8;
+}
+
 .container{
-    max-width:1200px;
+    max-width:1300px;
     margin:auto;
     background:white;
     padding:20px;
@@ -33,7 +70,20 @@ h1{
     color:#2563eb;
 }
 
-.login-box,
+/* FILTER */
+.filter-box{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:15px;
+}
+
+.filter-box select{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
 .form-box{
     display:flex;
     gap:10px;
@@ -42,27 +92,24 @@ h1{
 }
 
 input,
-select,
-button{
+select{
     padding:10px;
     border-radius:8px;
     border:1px solid #ccc;
     font-size:14px;
-}
-
-input,
-select{
     flex:1;
 }
 
-button{
+.main-btn{
+    padding:10px;
+    border:none;
+    border-radius:8px;
     background:#2563eb;
     color:white;
-    border:none;
     cursor:pointer;
 }
 
-button:hover{
+.main-btn:hover{
     background:#1d4ed8;
 }
 
@@ -97,21 +144,30 @@ table th{
 }
 
 .role{
-    margin-bottom:15px;
+    margin-bottom:10px;
     font-weight:bold;
     color:#2563eb;
 }
 
 .action-btn{
     padding:5px 10px;
-    margin:2px;
+    border:none;
+    border-radius:5px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
     font-size:12px;
+    margin:2px;
 }
 
-@media(max-width:600px){
+.action-btn:hover{
+    background:#1d4ed8;
+}
 
-    .login-box,
-    .form-box{
+@media(max-width:700px){
+
+    .form-box,
+    .filter-box{
         flex-direction:column;
     }
 
@@ -123,12 +179,10 @@ table th{
 
 <body>
 
-<div class="container">
-
-<h1>KAS BAYU TITIP</h1>
-
 <!-- LOGIN -->
-<div class="login-box" id="loginBox">
+<div class="login-top">
+
+<div class="login-box">
 
 <input type="text"
 id="username"
@@ -139,23 +193,87 @@ id="password"
 placeholder="Password">
 
 <button onclick="loginAdmin()">
-Login Admin
+Login
 </button>
 
 <button onclick="modeTamu()">
-Mode Tamu
+Tamu
 </button>
 
 </div>
+
+</div>
+
+<div class="container">
+
+<h1>LAPORAN ARUS KEUANGAN</h1>
 
 <div class="role" id="roleInfo">
 Mode : Tamu
 </div>
 
-<!-- FORM ADMIN -->
-<div class="form-box hidden" id="adminForm">
+<!-- SORTIR -->
+<div class="filter-box">
 
-<input type="date" id="tanggal">
+<select id="sortTanggal"
+onchange="sortData()">
+
+<option value="">
+Sortir Tanggal
+</option>
+
+<option value="asc">
+Tanggal Terlama
+</option>
+
+<option value="desc">
+Tanggal Terbaru
+</option>
+
+</select>
+
+<select id="sortJenis"
+onchange="sortData()">
+
+<option value="">
+Sortir Jenis
+</option>
+
+<option value="Pemasukan">
+Pemasukan
+</option>
+
+<option value="Pengeluaran">
+Pengeluaran
+</option>
+
+</select>
+
+<select id="sortJumlah"
+onchange="sortData()">
+
+<option value="">
+Sortir Jumlah
+</option>
+
+<option value="asc">
+Terkecil
+</option>
+
+<option value="desc">
+Terbesar
+</option>
+
+</select>
+
+</div>
+
+<!-- FORM -->
+<div class="form-box hidden"
+id="adminForm">
+
+<input type="date"
+id="tanggal">
 
 <select id="jenis">
 
@@ -177,15 +295,18 @@ placeholder="Keterangan">
 id="jumlah"
 placeholder="Nominal">
 
-<button onclick="tambahData()">
+<button class="main-btn"
+onclick="tambahData()">
 Tambah
 </button>
 
-<button onclick="exportPDF()">
+<button class="main-btn"
+onclick="exportPDF()">
 Export PDF
 </button>
 
-<button onclick="hapusSemuaData()">
+<button class="main-btn"
+onclick="hapusSemuaData()">
 Hapus Semua
 </button>
 
@@ -203,7 +324,6 @@ Hapus Semua
 <th>Keterangan</th>
 <th>Jumlah</th>
 <th>Sisa</th>
-<th>Aksi</th>
 </tr>
 
 </thead>
@@ -223,18 +343,18 @@ Rp <span id="saldo">0</span>
 
 <script>
 
-// ======================
+// =====================
 // LOGIN
-// ======================
+// =====================
 
 const USERNAME = "admin";
 const PASSWORD = "admin123";
 
 let isAdmin = false;
 
-// ======================
+// =====================
 // DATA
-// ======================
+// =====================
 
 let saldo =
 localStorage.getItem("saldo")
@@ -246,9 +366,9 @@ localStorage.getItem("nomor")
 ? parseInt(localStorage.getItem("nomor"))
 : 1;
 
-// ======================
+// =====================
 // LOAD
-// ======================
+// =====================
 
 window.onload = function(){
 
@@ -260,9 +380,9 @@ window.onload = function(){
 
 }
 
-// ======================
+// =====================
 // FORMAT RUPIAH
-// ======================
+// =====================
 
 function formatRupiah(angka){
 
@@ -270,9 +390,9 @@ function formatRupiah(angka){
 
 }
 
-// ======================
-// LOGIN ADMIN
-// ======================
+// =====================
+// LOGIN
+// =====================
 
 function loginAdmin(){
 
@@ -293,11 +413,6 @@ function loginAdmin(){
 
         isAdmin = true;
 
-        // HILANGKAN LOGIN
-        document.getElementById("loginBox")
-        .style.display = "none";
-
-        // TAMPILKAN FORM
         document.getElementById("adminForm")
         .classList.remove("hidden");
 
@@ -317,9 +432,9 @@ function loginAdmin(){
 
 }
 
-// ======================
+// =====================
 // MODE TAMU
-// ======================
+// =====================
 
 function modeTamu(){
 
@@ -336,19 +451,11 @@ function modeTamu(){
 
 }
 
-// ======================
+// =====================
 // TAMBAH DATA
-// ======================
+// =====================
 
 function tambahData(){
-
-    if(!isAdmin){
-
-        alert("Hanya admin");
-
-        return;
-
-    }
 
     const tanggal =
     document.getElementById("tanggal")
@@ -371,7 +478,6 @@ function tambahData(){
     if(!tanggal){
 
         alert("Tanggal wajib diisi");
-
         return;
 
     }
@@ -379,7 +485,6 @@ function tambahData(){
     if(!keterangan){
 
         alert("Keterangan wajib diisi");
-
         return;
 
     }
@@ -387,12 +492,10 @@ function tambahData(){
     if(!jumlah || jumlah <= 0){
 
         alert("Nominal tidak valid");
-
         return;
 
     }
 
-    // HITUNG SALDO
     if(jenis === "Pemasukan"){
 
         saldo += jumlah;
@@ -403,7 +506,6 @@ function tambahData(){
 
     }
 
-    // DATA TRANSAKSI
     const transaksi = {
 
         nomor : nomor,
@@ -415,16 +517,13 @@ function tambahData(){
 
     };
 
-    // AMBIL DATA
     let dataKas =
     JSON.parse(
         localStorage.getItem("dataKas")
     ) || [];
 
-    // TAMBAH
     dataKas.push(transaksi);
 
-    // SIMPAN
     localStorage.setItem(
         "dataKas",
         JSON.stringify(dataKas)
@@ -444,7 +543,6 @@ function tambahData(){
 
     tampilkanData();
 
-    // RESET
     document.getElementById("jumlah")
     .value = "";
 
@@ -453,18 +551,44 @@ function tambahData(){
 
 }
 
-// ======================
+// =====================
 // TAMPILKAN DATA
-// ======================
+// =====================
 
-function tampilkanData(){
+function tampilkanData(dataCustom = null){
 
     const tbody =
     document.getElementById("tbody");
 
+    const thead =
+    document.querySelector("thead tr");
+
     tbody.innerHTML = "";
 
+    thead.innerHTML = `
+
+        <th>No</th>
+        <th>Tanggal</th>
+        <th>Jenis</th>
+        <th>Keterangan</th>
+        <th>Jumlah</th>
+        <th>Sisa</th>
+
+        ${
+            isAdmin
+            ?
+            "<th>Aksi</th>"
+            :
+            ""
+        }
+
+    `;
+
     let dataKas =
+    dataCustom
+    ?
+    dataCustom
+    :
     JSON.parse(
         localStorage.getItem("dataKas")
     ) || [];
@@ -491,13 +615,13 @@ function tampilkanData(){
         Rp ${formatRupiah(item.saldo)}
         </td>
 
-        <td>
-
         ${
             isAdmin
             ?
 
             `
+            <td>
+
             <button
             class="action-btn"
             onclick="editData(${index})">
@@ -509,14 +633,14 @@ function tampilkanData(){
             onclick="hapusItem(${index})">
             Hapus
             </button>
+
+            </td>
             `
 
             :
 
-            "-"
+            ""
         }
-
-        </td>
 
         </tr>
 
@@ -530,9 +654,87 @@ function tampilkanData(){
 
 }
 
-// ======================
-// EDIT DATA
-// ======================
+// =====================
+// SORTIR
+// =====================
+
+function sortData(){
+
+    let dataKas =
+    JSON.parse(
+        localStorage.getItem("dataKas")
+    ) || [];
+
+    const sortTanggal =
+    document.getElementById("sortTanggal")
+    .value;
+
+    const sortJenis =
+    document.getElementById("sortJenis")
+    .value;
+
+    const sortJumlah =
+    document.getElementById("sortJumlah")
+    .value;
+
+    // SORT TANGGAL
+    if(sortTanggal){
+
+        dataKas.sort((a,b)=>{
+
+            if(sortTanggal === "asc"){
+
+                return new Date(a.tanggal)
+                - new Date(b.tanggal);
+
+            }else{
+
+                return new Date(b.tanggal)
+                - new Date(a.tanggal);
+
+            }
+
+        });
+
+    }
+
+    // SORT JENIS
+    if(sortJenis){
+
+        dataKas =
+        dataKas.filter(
+            item =>
+            item.jenis === sortJenis
+        );
+
+    }
+
+    // SORT JUMLAH
+    if(sortJumlah){
+
+        dataKas.sort((a,b)=>{
+
+            if(sortJumlah === "asc"){
+
+                return a.jumlah - b.jumlah;
+
+            }else{
+
+                return b.jumlah - a.jumlah;
+
+            }
+
+        });
+
+    }
+
+    tampilkanData(dataKas);
+
+}
+
+// =====================
+// EDIT
+// =====================
 
 function editData(index){
 
@@ -541,9 +743,9 @@ function editData(index){
         localStorage.getItem("dataKas")
     ) || [];
 
-    const item = dataKas[index];
+    const item =
+    dataKas[index];
 
-    // MASUKKAN KE FORM
     document.getElementById("tanggal")
     .value = item.tanggal;
 
@@ -556,7 +758,6 @@ function editData(index){
     document.getElementById("jumlah")
     .value = item.jumlah;
 
-    // HAPUS DATA LAMA
     dataKas.splice(index,1);
 
     localStorage.setItem(
@@ -570,9 +771,9 @@ function editData(index){
 
 }
 
-// ======================
+// =====================
 // HAPUS ITEM
-// ======================
+// =====================
 
 function hapusItem(index){
 
@@ -605,9 +806,9 @@ function hapusItem(index){
 
 }
 
-// ======================
-// HITUNG ULANG SALDO
-// ======================
+// =====================
+// HITUNG ULANG
+// =====================
 
 function hitungUlangSaldo(){
 
@@ -631,7 +832,6 @@ function hitungUlangSaldo(){
         }
 
         item.saldo = saldo;
-
         item.nomor = index + 1;
 
     });
@@ -655,9 +855,9 @@ function hitungUlangSaldo(){
 
 }
 
-// ======================
-// HAPUS SEMUA DATA
-// ======================
+// =====================
+// HAPUS SEMUA
+// =====================
 
 function hapusSemuaData(){
 
@@ -683,9 +883,9 @@ function hapusSemuaData(){
 
 }
 
-// ======================
+// =====================
 // EXPORT PDF
-// ======================
+// =====================
 
 async function exportPDF(){
 
@@ -695,17 +895,37 @@ async function exportPDF(){
     const doc =
     new jsPDF();
 
-    // JUDUL
+    const now =
+    new Date();
+
+    const timestamp =
+    now.toLocaleDateString('id-ID') +
+    " " +
+    now.getHours()
+    .toString()
+    .padStart(2,'0') +
+    ":" +
+    now.getMinutes()
+    .toString()
+    .padStart(2,'0');
+
     doc.setFontSize(16);
 
     doc.text(
-        "LAPORAN KAS BAYU TITIP",
+        "LAPORAN ARUS KEUANGAN",
         20,
         20
     );
 
-    // HEADER
-    let y = 40;
+    doc.setFontSize(10);
+
+    doc.text(
+        "Export : " + timestamp,
+        20,
+        30
+    );
+
+    let y = 45;
 
     doc.setFontSize(9);
 
@@ -718,7 +938,6 @@ async function exportPDF(){
 
     y += 10;
 
-    // DATA
     const rows =
     document.querySelectorAll("#tbody tr");
 
@@ -746,7 +965,6 @@ async function exportPDF(){
 
     });
 
-    // TOTAL
     y += 10;
 
     doc.setFontSize(12);
@@ -759,7 +977,6 @@ async function exportPDF(){
         y
     );
 
-    // TANDA TANGAN
     y += 40;
 
     doc.text(
@@ -768,8 +985,7 @@ async function exportPDF(){
         y
     );
 
-    // SAVE
-    doc.save("laporan_kas.pdf");
+    doc.save("laporan_arus_keuangan.pdf");
 
 }
 
