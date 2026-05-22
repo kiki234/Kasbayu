@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Aplikasi Kas Bayu Titip</title>
+
+<!-- JSPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+body{
+    margin:0;
+    padding:20px;
+    background:#f3f4f6;
+    font-family:Arial;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+h1{
+    text-align:center;
+    color:#2563eb;
+}
+
+.login-box,
+.form-box{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:15px;
+}
+
+input,
+select,
+button{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:14px;
+}
+
+input,
+select{
+    flex:1;
+}
+
+button{
+    background:#2563eb;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+.hidden{
+    display:none;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+table th,
+table td{
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
+}
+
+table th{
+    background:#2563eb;
+    color:white;
+}
+
+.saldo{
+    margin-top:20px;
+    text-align:right;
+    font-size:22px;
+    font-weight:bold;
+    color:green;
+}
+
+.role{
+    margin-bottom:15px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.action-btn{
+    padding:5px 10px;
+    margin:2px;
+    font-size:12px;
+}
+
+@media(max-width:600px){
+
+    .login-box,
+    .form-box{
+        flex-direction:column;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>KAS BAYU TITIP</h1>
+
+<!-- LOGIN -->
+<div class="login-box" id="loginBox">
+
+<input type="text"
+id="username"
+placeholder="Username">
+
+<input type="password"
+id="password"
+placeholder="Password">
+
+<button onclick="loginAdmin()">
+Login Admin
+</button>
+
+<button onclick="modeTamu()">
+Mode Tamu
+</button>
+
+</div>
+
+<div class="role" id="roleInfo">
+Mode : Tamu
+</div>
+
+<!-- FORM ADMIN -->
+<div class="form-box hidden" id="adminForm">
+
+<input type="date" id="tanggal">
+
+<select id="jenis">
+
+<option value="Pemasukan">
+Pemasukan
+</option>
+
+<option value="Pengeluaran">
+Pengeluaran
+</option>
+
+</select>
+
+<input type="text"
+id="keterangan"
+placeholder="Keterangan">
+
+<input type="number"
+id="jumlah"
+placeholder="Nominal">
+
+<button onclick="tambahData()">
+Tambah
+</button>
+
+<button onclick="exportPDF()">
+Export PDF
+</button>
+
+<button onclick="hapusSemuaData()">
+Hapus Semua
+</button>
+
+</div>
+
+<!-- TABEL -->
+<table>
+
+<thead>
+
+<tr>
+<th>No</th>
+<th>Tanggal</th>
+<th>Jenis</th>
+<th>Keterangan</th>
+<th>Jumlah</th>
+<th>Sisa</th>
+<th>Aksi</th>
+</tr>
+
+</thead>
+
+<tbody id="tbody">
+
+</tbody>
+
+</table>
+
+<div class="saldo">
+Total Saldo :
+Rp <span id="saldo">0</span>
+</div>
+
+</div>
+
+<script>
+
+// ======================
+// LOGIN
+// ======================
+
+const USERNAME = "admin";
+const PASSWORD = "admin123";
+
+let isAdmin = false;
+
+// ======================
+// DATA
+// ======================
+
+let saldo =
+localStorage.getItem("saldo")
+? parseInt(localStorage.getItem("saldo"))
+: 0;
+
+let nomor =
+localStorage.getItem("nomor")
+? parseInt(localStorage.getItem("nomor"))
+: 1;
+
+// ======================
+// LOAD
+// ======================
+
+window.onload = function(){
+
+    tampilkanData();
+
+    document.getElementById("saldo")
+    .innerText =
+    formatRupiah(saldo);
+
+}
+
+// ======================
+// FORMAT RUPIAH
+// ======================
+
+function formatRupiah(angka){
+
+    return angka.toLocaleString("id-ID");
+
+}
+
+// ======================
+// LOGIN ADMIN
+// ======================
+
+function loginAdmin(){
+
+    const username =
+    document.getElementById("username")
+    .value
+    .trim();
+
+    const password =
+    document.getElementById("password")
+    .value
+    .trim();
+
+    if(
+        username === USERNAME &&
+        password === PASSWORD
+    ){
+
+        isAdmin = true;
+
+        // HILANGKAN LOGIN
+        document.getElementById("loginBox")
+        .style.display = "none";
+
+        // TAMPILKAN FORM
+        document.getElementById("adminForm")
+        .classList.remove("hidden");
+
+        document.getElementById("roleInfo")
+        .innerHTML =
+        "Mode : Admin";
+
+        tampilkanData();
+
+        alert("Login berhasil");
+
+    }else{
+
+        alert("Username atau Password salah");
+
+    }
+
+}
+
+// ======================
+// MODE TAMU
+// ======================
+
+function modeTamu(){
+
+    isAdmin = false;
+
+    document.getElementById("adminForm")
+    .classList.add("hidden");
+
+    document.getElementById("roleInfo")
+    .innerHTML =
+    "Mode : Tamu";
+
+    tampilkanData();
+
+}
+
+// ======================
+// TAMBAH DATA
+// ======================
+
+function tambahData(){
+
+    if(!isAdmin){
+
+        alert("Hanya admin");
+
+        return;
+
+    }
+
+    const tanggal =
+    document.getElementById("tanggal")
+    .value;
+
+    const jenis =
+    document.getElementById("jenis")
+    .value;
+
+    const keterangan =
+    document.getElementById("keterangan")
+    .value;
+
+    const jumlah =
+    parseInt(
+        document.getElementById("jumlah")
+        .value
+    );
+
+    if(!tanggal){
+
+        alert("Tanggal wajib diisi");
+
+        return;
+
+    }
+
+    if(!keterangan){
+
+        alert("Keterangan wajib diisi");
+
+        return;
+
+    }
+
+    if(!jumlah || jumlah <= 0){
+
+        alert("Nominal tidak valid");
+
+        return;
+
+    }
+
+    // HITUNG SALDO
+    if(jenis === "Pemasukan"){
+
+        saldo += jumlah;
+
+    }else{
+
+        saldo -= jumlah;
+
+    }
+
+    // DATA TRANSAKSI
+    const transaksi = {
+
+        nomor : nomor,
+        tanggal : tanggal,
+        jenis : jenis,
+        keterangan : keterangan,
+        jumlah : jumlah,
+        saldo : saldo
+
+    };
+
+    // AMBIL DATA
+    let dataKas =
+    JSON.parse(
+        localStorage.getItem("dataKas")
+    ) || [];
+
+    // TAMBAH
+    dataKas.push(transaksi);
+
+    // SIMPAN
+    localStorage.setItem(
+        "dataKas",
+        JSON.stringify(dataKas)
+    );
+
+    localStorage.setItem(
+        "saldo",
+        saldo
+    );
+
+    nomor++;
+
+    localStorage.setItem(
+        "nomor",
+        nomor
+    );
+
+    tampilkanData();
+
+    // RESET
+    document.getElementById("jumlah")
+    .value = "";
+
+    document.getElementById("keterangan")
+    .value = "";
+
+}
+
+// ======================
+// TAMPILKAN DATA
+// ======================
+
+function tampilkanData(){
+
+    const tbody =
+    document.getElementById("tbody");
+
+    tbody.innerHTML = "";
+
+    let dataKas =
+    JSON.parse(
+        localStorage.getItem("dataKas")
+    ) || [];
+
+    dataKas.forEach((item,index)=>{
+
+        tbody.innerHTML += `
+
+        <tr>
+
+        <td>${item.nomor}</td>
+
+        <td>${item.tanggal}</td>
+
+        <td>${item.jenis}</td>
+
+        <td>${item.keterangan}</td>
+
+        <td>
+        Rp ${formatRupiah(item.jumlah)}
+        </td>
+
+        <td>
+        Rp ${formatRupiah(item.saldo)}
+        </td>
+
+        <td>
+
+        ${
+            isAdmin
+            ?
+
+            `
+            <button
+            class="action-btn"
+            onclick="editData(${index})">
+            Edit
+            </button>
+
+            <button
+            class="action-btn"
+            onclick="hapusItem(${index})">
+            Hapus
+            </button>
+            `
+
+            :
+
+            "-"
+        }
+
+        </td>
+
+        </tr>
+
+        `;
+
+    });
+
+    document.getElementById("saldo")
+    .innerText =
+    formatRupiah(saldo);
+
+}
+
+// ======================
+// EDIT DATA
+// ======================
+
+function editData(index){
+
+    let dataKas =
+    JSON.parse(
+        localStorage.getItem("dataKas")
+    ) || [];
+
+    const item = dataKas[index];
+
+    // MASUKKAN KE FORM
+    document.getElementById("tanggal")
+    .value = item.tanggal;
+
+    document.getElementById("jenis")
+    .value = item.jenis;
+
+    document.getElementById("keterangan")
+    .value = item.keterangan;
+
+    document.getElementById("jumlah")
+    .value = item.jumlah;
+
+    // HAPUS DATA LAMA
+    dataKas.splice(index,1);
+
+    localStorage.setItem(
+        "dataKas",
+        JSON.stringify(dataKas)
+    );
+
+    hitungUlangSaldo();
+
+    tampilkanData();
+
+}
+
+// ======================
+// HAPUS ITEM
+// ======================
+
+function hapusItem(index){
+
+    const konfirmasi =
+    confirm(
+        "Yakin ingin menghapus data ini?"
+    );
+
+    if(!konfirmasi){
+
+        return;
+
+    }
+
+    let dataKas =
+    JSON.parse(
+        localStorage.getItem("dataKas")
+    ) || [];
+
+    dataKas.splice(index,1);
+
+    localStorage.setItem(
+        "dataKas",
+        JSON.stringify(dataKas)
+    );
+
+    hitungUlangSaldo();
+
+    tampilkanData();
+
+}
+
+// ======================
+// HITUNG ULANG SALDO
+// ======================
+
+function hitungUlangSaldo(){
+
+    let dataKas =
+    JSON.parse(
+        localStorage.getItem("dataKas")
+    ) || [];
+
+    saldo = 0;
+
+    dataKas.forEach((item,index)=>{
+
+        if(item.jenis === "Pemasukan"){
+
+            saldo += item.jumlah;
+
+        }else{
+
+            saldo -= item.jumlah;
+
+        }
+
+        item.saldo = saldo;
+
+        item.nomor = index + 1;
+
+    });
+
+    nomor = dataKas.length + 1;
+
+    localStorage.setItem(
+        "dataKas",
+        JSON.stringify(dataKas)
+    );
+
+    localStorage.setItem(
+        "saldo",
+        saldo
+    );
+
+    localStorage.setItem(
+        "nomor",
+        nomor
+    );
+
+}
+
+// ======================
+// HAPUS SEMUA DATA
+// ======================
+
+function hapusSemuaData(){
+
+    const konfirmasi =
+    confirm(
+        "Yakin ingin menghapus semua data?"
+    );
+
+    if(!konfirmasi){
+
+        return;
+
+    }
+
+    localStorage.removeItem("dataKas");
+    localStorage.removeItem("saldo");
+    localStorage.removeItem("nomor");
+
+    saldo = 0;
+    nomor = 1;
+
+    tampilkanData();
+
+}
+
+// ======================
+// EXPORT PDF
+// ======================
+
+async function exportPDF(){
+
+    const { jsPDF } =
+    window.jspdf;
+
+    const doc =
+    new jsPDF();
+
+    // JUDUL
+    doc.setFontSize(16);
+
+    doc.text(
+        "LAPORAN KAS BAYU TITIP",
+        20,
+        20
+    );
+
+    // HEADER
+    let y = 40;
+
+    doc.setFontSize(9);
+
+    doc.text("No",10,y);
+    doc.text("Tanggal",20,y);
+    doc.text("Jenis",50,y);
+    doc.text("Keterangan",75,y);
+    doc.text("Jumlah",130,y);
+    doc.text("Sisa",170,y);
+
+    y += 10;
+
+    // DATA
+    const rows =
+    document.querySelectorAll("#tbody tr");
+
+    rows.forEach((row)=>{
+
+        const cols =
+        row.querySelectorAll("td");
+
+        doc.text(cols[0].innerText,10,y);
+        doc.text(cols[1].innerText,20,y);
+        doc.text(cols[2].innerText,50,y);
+        doc.text(cols[3].innerText,75,y);
+        doc.text(cols[4].innerText,130,y);
+        doc.text(cols[5].innerText,170,y);
+
+        y += 10;
+
+        if(y > 260){
+
+            doc.addPage();
+
+            y = 20;
+
+        }
+
+    });
+
+    // TOTAL
+    y += 10;
+
+    doc.setFontSize(12);
+
+    doc.text(
+        "Total Saldo : Rp " +
+        document.getElementById("saldo")
+        .innerText,
+        20,
+        y
+    );
+
+    // TANDA TANGAN
+    y += 40;
+
+    doc.text(
+        "CREATED BY SOFYAN",
+        140,
+        y
+    );
+
+    // SAVE
+    doc.save("laporan_kas.pdf");
+
+}
+
+</script>
+
+</body>
+</html>
