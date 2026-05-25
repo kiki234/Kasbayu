@@ -330,7 +330,7 @@
 
         doc.setFont("helvetica", "bold");
         // Judul laporan PDF sekarang lebih relevan
-        doc.text("LAPORAN ARUS KAS - LEORIA TOUR & TRAVEL", 105, 15, { align: "center" });
+        doc.text("LAPORAN ARUS KAS", 105, 15, { align: "center" });
         
         doc.autoTable({ 
             html: '#kasTable', 
@@ -345,7 +345,7 @@
         doc.setTextColor(150, 150, 150);
         doc.text("CREATED BY SOFYAN GANTENG", 105, finalY + 15, { align: "center" });
         
-        doc.save('Laporan_Kas_Leoria.pdf');
+        doc.save('Laporan_Kas.pdf');
         
         if (isAksiVisible) {
             thAksi.style.display = 'table-cell';
