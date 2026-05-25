@@ -2,133 +2,328 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Sistem Kas Profesional</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Arus Kas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 950px; margin: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #2563eb; color: white; }
-        .btn { cursor: pointer; padding: 6px; border: none; border-radius: 4px; background: #2563eb; color: white; }
+        /* DESAIN TAMPILAN */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; padding: 20px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 1000px; margin: 40px auto 0 auto; }
+        .login-box { position: fixed; top: 15px; left: 15px; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: flex; gap: 8px; }
+        .login-box input { width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        .admin-panel { background: #e0f2fe; padding: 20px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 20px; display: none; }
+        .admin-panel input, .admin-panel select { padding: 8px; margin-right: 10px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 4px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; font-size: 14px; }
+        th { background: #0284c7; color: white; }
+        
+        .btn-primary { background: #0284c7; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-danger { background: #dc2626; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-edit { background: #f59e0b; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loginBox" style="position:fixed; top:10px; left:10px; z-index:1000; background:#fff; padding:10px;">
-    <input type="text" id="user" placeholder="User" style="width:60px">
-    <input type="password" id="pass" placeholder="Pass" style="width:60px">
-    <button onclick="login()">Login</button>
+<div class="login-box" id="loginBox">
+    <input type="text" id="user" placeholder="Username">
+    <input type="password" id="pass" placeholder="Password">
+    <button class="btn-primary" onclick="login()">Login</button>
 </div>
 
 <div class="card">
-    <h2>Data Arus Kas</h2>
-    <div id="adminPanel" style="display:none; padding:10px; border:1px solid #ccc;">
-        <button onclick="logout()" style="background:#dc2626; color:white;">Logout</button>
-        <select id="jenis"><option value="Pemasukan">Pemasukan</option><option value="Pengeluaran">Pengeluaran</option></select>
-        <input type="text" id="ket" placeholder="Keterangan">
-        <input type="number" id="saldo" placeholder="Nominal">
-        <button id="btnSimpan" onclick="addData()">Simpan</button>
+    <h2 style="color: #0f172a; margin-top: 0;">Laporan Arus Kas</h2>
+    
+    <div class="admin-panel" id="adminPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <strong style="color: #0369a1;">Mode Administrator Aktif</strong>
+            <button class="btn-danger" onclick="logout()">Logout</button>
+        </div>
+        <div>
+            <select id="jenis">
+                <option value="Pemasukan">Pemasukan</option>
+                <option value="Pengeluaran">Pengeluaran</option>
+            </select>
+            <input type="text" id="ket" placeholder="Keterangan Transaksi" style="width: 250px;">
+            <input type="number" id="saldo" placeholder="Nominal (Tanpa Titik)">
+            <button class="btn-primary" id="btnSimpan" onclick="tambahData()">Simpan Transaksi</button>
+            <button class="btn-danger" id="btnBatalEdit" onclick="batalEdit()" style="display:none;">Batal Edit</button>
+        </div>
     </div>
     
-    <button onclick="exportPDF()" style="margin-top:10px">Export PDF</button>
+    <button class="btn-primary" onclick="exportPDF()" style="margin-bottom: 10px;">📄 Export ke PDF</button>
     
     <table id="kasTable">
         <thead>
-            <tr><th>Jenis</th><th>Tanggal</th><th>Keterangan</th><th>Nominal</th><th>Saldo Berjalan</th><th id="aksiHeader" style="display:none;">Aksi</th></tr>
+            <tr>
+                <th>Jenis</th>
+                <th>Tanggal</th>
+                <th>Keterangan</th>
+                <th>Nominal</th>
+                <th>Saldo Berjalan</th>
+                <th id="aksiHeader" style="display:none; width: 120px;">Aksi</th>
+            </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+            <tr><td colspan="6" style="text-align: center;">Memuat data...</td></tr>
+        </tbody>
     </table>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwhuqIF-4fwLj1ZMMKqbvRgBJw1CbGuucDzKDebp9Gxa9fVBSbxy7ev2oFpNYWucei7bg/exec"; // GANTI URL WEB APP ANDA
-    let editIndex = null;
+    // 1. PENGATURAN DASAR
+    const API_URL = "https://script.google.com/macros/s/AKfycbyggmUHS_txvRETzxcOrvQYpqGg31bUcCp3OQDiwKwAjLhmxDPVSHqvvvj9MvBFH_-EYw/exec"; 
     
-    // Format Rupiah
-    const formatRp = (n) => new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(n);
+    // Format mata uang Rupiah
+    const formatRp = (angka) => new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(angka);
     
-    // Format Tanggal DD/MMMM/YYYY
-    function formatTanggal(tglInput) {
-        const b = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-        const d = new Date(tglInput);
-        return `${d.getDate()}/${b[d.getMonth()]}/${d.getFullYear()}`;
+    // Format tanggal menjadi DD/Bulan/YYYY
+    function formatTanggal(tglString) {
+        const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        const d = new Date(tglString);
+        return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
     }
 
-    async function fetchData() {
-        const res = await fetch(API_URL, {method:'POST', mode:'cors', body: JSON.stringify({action:'read'})});
-        const data = await res.json();
-        let bal = 0;
-        const tbody = document.querySelector('#kasTable tbody');
-        const isAdmin = localStorage.getItem('isLoggedIn');
-        
-        if(isAdmin) document.getElementById('aksiHeader').style.display = 'table-cell';
+    // Variabel penampung saat mode Edit aktif
+    let sedangEdit = false;
+    let editRowIndex = null;
+    let editId = null;
 
-        tbody.innerHTML = data.map((r, i) => {
-            bal += (r[1] === "Pemasukan" ? parseInt(r[4]) : -parseInt(r[4]));
-            return `<tr style="background:${r[1] === 'Pengeluaran' ? '#fef9c3' : 'transparent'}">
-                <td>${r[1]}</td><td>${formatTanggal(r[2])}</td><td>${r[3]}</td>
-                <td>${formatRp(r[4])}</td><td>${formatRp(bal)}</td>
-                ${isAdmin ? `<td><button class="btn" onclick="editData(${i+2}, '${r[1]}', '${r[3]}', '${r[4]}')">Edit</button>
-                <button class="btn" onclick="hapusData(${i+2})" style="background:#dc2626">Hapus</button></td>` : ''}
-            </tr>`;
-        }).join('');
-    }
+    // 2. FUNGSI MENGAMBIL DAN MENAMPILKAN DATA
+    async function muatData() {
+        try {
+            // Memanggil API Google
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                // Trik: Menggunakan text/plain mencegah browser melakukan preflight OPTIONS yang rumit
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'read' })
+            });
+            
+            const data = await response.json();
+            const tbody = document.querySelector('#kasTable tbody');
+            const isAdmin = localStorage.getItem('isLoggedIn') === 'true';
+            
+            // Atur tampilan Header Aksi
+            document.getElementById('aksiHeader').style.display = isAdmin ? 'table-cell' : 'none';
+            
+            let saldoBerjalan = 0;
+            let barisHTML = '';
 
-    async function addData() {
-        await fetch(API_URL, {method:'POST', mode:'cors', body: JSON.stringify({action:'add', jenis:document.getElementById('jenis').value, tanggal:new Date().toISOString(), ket:document.getElementById('ket').value, saldo:document.getElementById('saldo').value})});
-        location.reload();
-    }
+            // Proses setiap baris data dari Google Sheet
+            data.forEach((baris, index) => {
+                // baris[0]=ID, baris[1]=Jenis, baris[2]=Tanggal, baris[3]=Ket, baris[4]=Saldo
+                const nominal = parseInt(baris[4]) || 0;
+                
+                // Hitung kumulatif saldo
+                if (baris[1] === "Pemasukan") {
+                    saldoBerjalan += nominal;
+                } else {
+                    saldoBerjalan -= nominal;
+                }
 
-    function editData(idx, jenis, ket, saldo) {
-        editIndex = idx;
-        document.getElementById('jenis').value = jenis;
-        document.getElementById('ket').value = ket;
-        document.getElementById('saldo').value = saldo;
-        const btn = document.getElementById('btnSimpan');
-        btn.innerText = "Update"; btn.onclick = updateData;
-    }
+                // Warna kuning pucat untuk pengeluaran
+                const warnaLatar = baris[1] === 'Pengeluaran' ? '#fef9c3' : 'transparent';
+                
+                // rowIndex spreadsheet: index array + 2 (karena array mulai dari 0, dan baris 1 adalah header)
+                const rowIndex = index + 2; 
 
-    async function updateData() {
-        await fetch(API_URL, {method:'POST', mode:'cors', body: JSON.stringify({action:'edit', rowIndex:editIndex, id:new Date().getTime(), jenis:document.getElementById('jenis').value, tanggal:new Date().toISOString(), ket:document.getElementById('ket').value, saldo:document.getElementById('saldo').value})});
-        location.reload();
-    }
+                barisHTML += `
+                <tr style="background-color: ${warnaLatar}">
+                    <td>${baris[1]}</td>
+                    <td>${formatTanggal(baris[2])}</td>
+                    <td>${baris[3]}</td>
+                    <td>${formatRp(nominal)}</td>
+                    <td style="font-weight: bold;">${formatRp(saldoBerjalan)}</td>
+                    ${isAdmin ? `
+                    <td>
+                        <button class="btn-edit" onclick="siapkanEdit(${rowIndex}, '${baris[0]}', '${baris[1]}', '${baris[3]}', ${nominal})">Edit</button>
+                        <button class="btn-delete" onclick="hapusData(${rowIndex})">Hapus</button>
+                    </td>` : ''}
+                </tr>`;
+            });
 
-    async function hapusData(row) {
-        if(confirm('Yakin hapus?')) {
-            await fetch(API_URL, {method:'POST', mode:'cors', body: JSON.stringify({action:'delete', rowIndex: row})});
-            location.reload();
+            // Jika data kosong
+            if (data.length === 0) barisHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada data transaksi.</td></tr>';
+            
+            tbody.innerHTML = barisHTML;
+
+        } catch (error) {
+            document.querySelector('#kasTable tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Gagal memuat data. Pastikan URL API benar.</td></tr>';
+            console.error("Error Fetching:", error);
         }
     }
 
-    function login() {
-        if(document.getElementById('user').value === "admin" && document.getElementById('pass').value === "admin123") {
-            localStorage.setItem('isLoggedIn', 'true');
-            location.reload();
-        } else alert("Login Gagal");
+    // 3. FUNGSI TAMBAH DAN UPDATE DATA
+    async function tambahData() {
+        const inputJenis = document.getElementById('jenis').value;
+        const inputKet = document.getElementById('ket').value;
+        const inputSaldo = document.getElementById('saldo').value;
+
+        // Validasi agar form tidak kosong
+        if (!inputKet || !inputSaldo) {
+            alert("Keterangan dan Nominal wajib diisi!");
+            return;
+        }
+
+        const tombol = document.getElementById('btnSimpan');
+        tombol.innerText = "Memproses...";
+        tombol.disabled = true;
+
+        // Payload (paket data) yang dikirim ke Google Apps Script
+        const payload = {
+            action: sedangEdit ? 'edit' : 'add',
+            rowIndex: editRowIndex,
+            id: sedangEdit ? editId : new Date().getTime(),
+            jenis: inputJenis,
+            tanggal: new Date().toISOString(), // Tanggal saat ini
+            ket: inputKet,
+            saldo: inputSaldo
+        };
+
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            // Refresh halaman agar data terbaru muncul
+            location.reload(); 
+        } catch (error) {
+            alert("Terjadi kesalahan sistem saat menyimpan data.");
+            tombol.innerText = sedangEdit ? "Update Transaksi" : "Simpan Transaksi";
+            tombol.disabled = false;
+        }
     }
 
-    function logout() { localStorage.removeItem('isLoggedIn'); location.reload(); }
+    // 4. FUNGSI PERSIAPAN EDIT
+    function siapkanEdit(rowIndex, id, jenis, ket, nominal) {
+        sedangEdit = true;
+        editRowIndex = rowIndex;
+        editId = id;
 
-    function exportPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        document.getElementById('aksiHeader').style.display = 'none';
-        document.querySelectorAll('#kasTable td:last-child').forEach(el => el.style.display = 'none');
-        doc.text("LAPORAN ARUS KAS", 105, 15, { align: "center" });
-        doc.autoTable({ html: '#kasTable', startY: 25 });
-        doc.setFont("courier", "italic");
-        doc.text("CREATED BY SOFYAN GANTENG", 105, doc.lastAutoTable.finalY + 10, { align: "center" });
-        doc.save('Laporan_Kas.pdf');
+        // Masukkan data lama ke dalam input form
+        document.getElementById('jenis').value = jenis;
+        document.getElementById('ket').value = ket;
+        document.getElementById('saldo').value = nominal;
+
+        // Ubah tombol
+        document.getElementById('btnSimpan').innerText = "Update Transaksi";
+        document.getElementById('btnSimpan').style.background = "#f59e0b"; // Warna orange
+        document.getElementById('btnBatalEdit').style.display = "inline-block";
+        
+        // Scroll ke atas agar user melihat form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function batalEdit() {
+        sedangEdit = false;
+        editRowIndex = null;
+        editId = null;
+        document.getElementById('ket').value = "";
+        document.getElementById('saldo').value = "";
+        document.getElementById('btnSimpan').innerText = "Simpan Transaksi";
+        document.getElementById('btnSimpan').style.background = "#0284c7";
+        document.getElementById('btnBatalEdit').style.display = "none";
+    }
+
+    // 5. FUNGSI HAPUS DATA
+    async function hapusData(rowIndex) {
+        if (confirm("Apakah Anda yakin ingin menghapus data ini? Aksi ini tidak dapat dibatalkan.")) {
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'delete', rowIndex: rowIndex })
+                });
+                location.reload();
+            } catch (error) {
+                alert("Gagal menghapus data.");
+            }
+        }
+    }
+
+    // 6. FUNGSI LOGIN & LOGOUT
+    function login() {
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+        if (u === "admin" && p === "admin123") {
+            localStorage.setItem('isLoggedIn', 'true');
+            location.reload();
+        } else {
+            alert("Username atau Password salah!");
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('isLoggedIn');
         location.reload();
     }
 
-    if(localStorage.getItem('isLoggedIn')) {
+    // Deteksi tombol Enter pada form login
+    document.getElementById('pass').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') login();
+    });
+    document.getElementById('user').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('pass').focus();
+    });
+
+    // 7. FUNGSI EXPORT PDF
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Sembunyikan kolom "Aksi" jika sedang login sebagai admin
+        const thAksi = document.getElementById('aksiHeader');
+        const isAksiVisible = thAksi.style.display !== 'none';
+        
+        if (isAksiVisible) {
+            thAksi.style.display = 'none';
+            document.querySelectorAll('#kasTable tbody tr').forEach(tr => {
+                if(tr.cells.length > 5) tr.cells[5].style.display = 'none';
+            });
+        }
+
+        // Tulis Judul PDF
+        doc.setFont("helvetica", "bold");
+        doc.text("LAPORAN ARUS KAS", 105, 15, { align: "center" });
+        
+        // Render Tabel
+        doc.autoTable({ 
+            html: '#kasTable', 
+            startY: 25,
+            theme: 'grid',
+            headStyles: { fillColor: [2, 132, 199] }
+        });
+        
+        // Tulis Footer Khusus
+        const finalY = doc.lastAutoTable.finalY || 100;
+        doc.setFont("courier", "italic");
+        doc.setTextColor(100, 100, 100);
+        doc.text("CREATED BY SOFYAN GANTENG", 105, finalY + 15, { align: "center" });
+        
+        // Unduh File
+        doc.save('Laporan_Arus_Kas.pdf');
+        
+        // Kembalikan tampilan kolom Aksi setelah PDF selesai dibuat
+        if (isAksiVisible) {
+            thAksi.style.display = 'table-cell';
+            document.querySelectorAll('#kasTable tbody tr').forEach(tr => {
+                if(tr.cells.length > 5) tr.cells[5].style.display = 'table-cell';
+            });
+        }
+    }
+
+    // 8. INISIALISASI SAAT HALAMAN DIBUKA
+    if (localStorage.getItem('isLoggedIn') === 'true') {
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('loginBox').style.display = 'none';
     }
-    fetchData();
+    
+    // Mulai tarik data dari spreadsheet
+    muatData();
 </script>
 </body>
 </html>
