@@ -3,109 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Arus Kas</title>
+    <title>Laporan Kas Ubay</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
-        /* DESAIN TAMPILAN */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; padding: 20px; margin: 0; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 1000px; margin: 40px auto 0 auto; }
-        .login-box { position: fixed; top: 15px; left: 15px; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: flex; gap: 8px; }
-        .login-box input { width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-        .admin-panel { background: #e0f2fe; padding: 20px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 20px; display: none; }
-        .admin-panel input, .admin-panel select { padding: 8px; margin-right: 10px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 4px; }
+        /* CSS VARIABLE UNTUK WARNA FLAT DESIGN */
+        :root {
+            --primary: #3498db;
+            --primary-hover: #2980b9;
+            --danger: #e74c3c;
+            --danger-hover: #c0392b;
+            --warning: #f39c12;
+            --warning-hover: #e67e22;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --bg-color: #f8f9fa;
+            --border: #bdc3c7;
+            --row-expense: #fef9c3;
+        }
+
+        /* RESET & BASE */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg-color); color: var(--dark); padding: 15px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; font-size: 14px; }
-        th { background: #0284c7; color: white; }
+        /* KOTAK UTAMA (CARD) */
+        .card { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--light); max-width: 1000px; margin: 10px auto; }
         
-        .btn-primary { background: #0284c7; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-        .btn-danger { background: #dc2626; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-        .btn-edit { background: #f59e0b; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
-        .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
+        /* HEADER UTAMA */
+        .app-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--light); }
+        .app-header h2 { font-weight: 600; font-size: 1.4rem; color: var(--dark); }
+
+        /* KOTAK LOGIN FLAT */
+        .login-box { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .login-box input { width: 100px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; background: var(--light); }
+        
+        /* PANEL ADMIN FLAT */
+        .admin-panel { background: var(--light); padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none; }
+        .admin-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .form-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .form-group input, .form-group select { flex: 1 1 150px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
+        
+        /* TOMBOL FLAT */
+        button { cursor: pointer; border: none; padding: 10px 15px; border-radius: 4px; font-size: 14px; font-weight: 500; transition: background 0.2s ease; display: inline-flex; justify-content: center; align-items: center; gap: 5px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: var(--danger-hover); }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: var(--warning-hover); }
+        
+        /* TABEL RESPONSIVE */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 15px; border: 1px solid var(--light); border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; min-width: 650px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--light); font-size: 14px; }
+        th { background: var(--dark); color: white; font-weight: 500; white-space: nowrap; }
+        tr:hover { background-color: var(--light); }
+        .row-pengeluaran { background-color: var(--row-expense) !important; }
+        
+        .td-aksi { display: flex; gap: 5px; }
+
+        /* MEDIA QUERIES UNTUK MOBILE */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .card { padding: 15px; margin: 0 auto; border: none; border-radius: 0; }
+            .app-header h2 { font-size: 1.2rem; width: 100%; margin-bottom: 15px; text-align: center; }
+            .login-box { width: 100%; justify-content: center; }
+            .login-box input { flex: 1; }
+            
+            .form-group { flex-direction: column; }
+            .form-group input, .form-group select, .form-group button { width: 100%; flex: unset; }
+            
+            .admin-panel-header { flex-direction: column; gap: 10px; text-align: center; }
+            .admin-panel-header button { width: 100%; }
+        }
     </style>
 </head>
 <body>
 
-<div class="login-box" id="loginBox">
-    <input type="text" id="user" placeholder="Username">
-    <input type="password" id="pass" placeholder="Password">
-    <button class="btn-primary" onclick="login()">Login</button>
-</div>
-
 <div class="card">
-    <h2 style="color: #0f172a; margin-top: 0;">Laporan Arus Kas</h2>
+    <div class="app-header">
+        <h2>Leoria Tour & Travel - Arus Kas</h2>
+        
+        <div class="login-box" id="loginBox">
+            <input type="text" id="user" placeholder="Username">
+            <input type="password" id="pass" placeholder="Password">
+            <button class="btn-primary" onclick="login()">Log In</button>
+        </div>
+    </div>
     
     <div class="admin-panel" id="adminPanel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <strong style="color: #0369a1;">Mode Administrator Aktif</strong>
+        <div class="admin-panel-header">
+            <strong style="color: var(--dark);">📝 Panel Administrator</strong>
             <button class="btn-danger" onclick="logout()">Logout</button>
         </div>
-        <div>
+        <div class="form-group">
             <input type="date" id="tanggal" title="Pilih Tanggal Transaksi">
-            
             <select id="jenis">
                 <option value="Pemasukan">Pemasukan</option>
                 <option value="Pengeluaran">Pengeluaran</option>
             </select>
-            <input type="text" id="ket" placeholder="Keterangan Transaksi" style="width: 250px;">
-            <input type="number" id="saldo" placeholder="Nominal (Tanpa Titik)">
-            <button class="btn-primary" id="btnSimpan" onclick="tambahData()">Simpan Transaksi</button>
-            <button class="btn-danger" id="btnBatalEdit" onclick="batalEdit()" style="display:none;">Batal Edit</button>
+            <input type="text" id="ket" placeholder="Keterangan Transaksi" style="flex: 2 1 200px;">
+            <input type="number" id="saldo" placeholder="Nominal (Cth: 150000)">
+            <button class="btn-primary" id="btnSimpan" onclick="tambahData()" style="flex: 1 1 100%;">Simpan</button>
+            <button class="btn-warning" id="btnBatalEdit" onclick="batalEdit()" style="display:none; flex: 1 1 100%;">Batal Edit</button>
         </div>
     </div>
     
-    <button class="btn-primary" onclick="exportPDF()" style="margin-bottom: 10px;">📄 Export ke PDF</button>
+    <button class="btn-primary" onclick="exportPDF()" style="width: 100%; max-width: 200px;">📄 Export ke PDF</button>
     
-    <table id="kasTable">
-        <thead>
-            <tr>
-                <th>Jenis</th>
-                <th>Tanggal</th>
-                <th>Keterangan</th>
-                <th>Nominal</th>
-                <th>Saldo Berjalan</th>
-                <th id="aksiHeader" style="display:none; width: 120px;">Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td colspan="6" style="text-align: center;">Memuat data...</td></tr>
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table id="kasTable">
+            <thead>
+                <tr>
+                    <th>Jenis</th>
+                    <th>Tanggal</th>
+                    <th>Keterangan</th>
+                    <th>Nominal</th>
+                    <th>Saldo Berjalan</th>
+                    <th id="aksiHeader" style="display:none; width: 150px;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6" style="text-align: center; padding: 20px;">Memuat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    // MASUKKAN URL WEB APP ANDA DI BAWAH INI (JANGAN LUPA TANDA KUTIP)
+    // MASUKKAN URL WEB APP ANDA DI SINI
     const API_URL = "https://script.google.com/macros/s/AKfycbzfmmj1ujJaw_vn8XKsqsg-thG125cOzQVkF-a1zOP6J8nbrjiZAkJXln4M44CzsxC_Dg/exec"; 
     
-    // Format mata uang Rupiah
     const formatRp = (angka) => new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(angka);
     
-    // Format tanggal untuk Tampilan Tabel (DD Bulan YYYY)
     function formatTanggal(tglString) {
         if (!tglString) return "-";
-        const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        const bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
         const d = new Date(tglString);
         return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
     }
 
-    // Variabel penampung saat mode Edit aktif
     let sedangEdit = false;
     let editRowIndex = null;
     let editId = null;
 
-    // Set nilai default input tanggal menjadi hari ini
     function setTanggalHariIni() {
         const today = new Date();
-        // Format ke YYYY-MM-DD khusus untuk input type="date"
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         document.getElementById('tanggal').value = `${yyyy}-${mm}-${dd}`;
     }
 
-    // Mengambil dan menampilkan data dari Google Sheets
+    // FUNGSI RENDER TABEL UTAMA
+    function renderTabel(data) {
+        const tbody = document.querySelector('#kasTable tbody');
+        const isAdmin = localStorage.getItem('isLoggedIn') === 'true';
+        document.getElementById('aksiHeader').style.display = isAdmin ? 'table-cell' : 'none';
+        
+        let saldoBerjalan = 0;
+        let barisHTML = '';
+
+        data.forEach((baris, index) => {
+            const nominal = parseInt(baris[4]) || 0;
+            if (baris[1] === "Pemasukan") saldoBerjalan += nominal;
+            else saldoBerjalan -= nominal;
+
+            const kelasWarna = baris[1] === 'Pengeluaran' ? 'row-pengeluaran' : '';
+            const rowIndex = index + 2; 
+
+            barisHTML += `
+            <tr class="${kelasWarna}">
+                <td>${baris[1]}</td>
+                <td>${formatTanggal(baris[2])}</td>
+                <td>${baris[3]}</td>
+                <td>${formatRp(nominal)}</td>
+                <td style="font-weight: 600;">${formatRp(saldoBerjalan)}</td>
+                ${isAdmin ? `
+                <td class="td-aksi">
+                    <button class="btn-warning" style="padding: 6px 10px;" onclick="siapkanEdit(${rowIndex}, '${baris[0]}', '${baris[1]}', '${baris[2]}', '${baris[3]}', ${nominal})">Edit</button>
+                    <button class="btn-danger" style="padding: 6px 10px;" onclick="hapusData(${rowIndex})">Hapus</button>
+                </td>` : ''}
+            </tr>`;
+        });
+
+        if (data.length === 0) barisHTML = '<tr><td colspan="6" style="text-align: center; color: #7f8c8d;">Belum ada data transaksi.</td></tr>';
+        tbody.innerHTML = barisHTML;
+    }
+
+    // FUNGSI MUAT DATA DENGAN SWR (CACHE LOKAL)
     async function muatData() {
+        const dataLokal = localStorage.getItem('cacheKasLeoria');
+        if (dataLokal) renderTabel(JSON.parse(dataLokal)); 
+
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
@@ -113,52 +203,16 @@
                 body: JSON.stringify({ action: 'read' })
             });
             
-            const data = await response.json();
-            const tbody = document.querySelector('#kasTable tbody');
-            const isAdmin = localStorage.getItem('isLoggedIn') === 'true';
-            
-            document.getElementById('aksiHeader').style.display = isAdmin ? 'table-cell' : 'none';
-            
-            let saldoBerjalan = 0;
-            let barisHTML = '';
-
-            data.forEach((baris, index) => {
-                const nominal = parseInt(baris[4]) || 0;
-                
-                if (baris[1] === "Pemasukan") {
-                    saldoBerjalan += nominal;
-                } else {
-                    saldoBerjalan -= nominal;
-                }
-
-                const warnaLatar = baris[1] === 'Pengeluaran' ? '#fef9c3' : 'transparent';
-                const rowIndex = index + 2; 
-
-                barisHTML += `
-                <tr style="background-color: ${warnaLatar}">
-                    <td>${baris[1]}</td>
-                    <td>${formatTanggal(baris[2])}</td>
-                    <td>${baris[3]}</td>
-                    <td>${formatRp(nominal)}</td>
-                    <td style="font-weight: bold;">${formatRp(saldoBerjalan)}</td>
-                    ${isAdmin ? `
-                    <td>
-                        <button class="btn-edit" onclick="siapkanEdit(${rowIndex}, '${baris[0]}', '${baris[1]}', '${baris[2]}', '${baris[3]}', ${nominal})">Edit</button>
-                        <button class="btn-delete" onclick="hapusData(${rowIndex})">Hapus</button>
-                    </td>` : ''}
-                </tr>`;
-            });
-
-            if (data.length === 0) barisHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada data transaksi.</td></tr>';
-            tbody.innerHTML = barisHTML;
-
+            const dataServer = await response.json();
+            localStorage.setItem('cacheKasLeoria', JSON.stringify(dataServer));
+            renderTabel(dataServer);
         } catch (error) {
-            document.querySelector('#kasTable tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Gagal memuat data. Pastikan URL API benar.</td></tr>';
-            console.error("Error Fetching:", error);
+            if (!dataLokal) {
+                document.querySelector('#kasTable tbody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Gagal memuat data. Periksa koneksi internet Anda.</td></tr>';
+            }
         }
     }
 
-    // Fungsi Tambah atau Update Data
     async function tambahData() {
         const inputTanggal = document.getElementById('tanggal').value;
         const inputJenis = document.getElementById('jenis').value;
@@ -179,7 +233,7 @@
             rowIndex: editRowIndex,
             id: sedangEdit ? editId : new Date().getTime(),
             jenis: inputJenis,
-            tanggal: inputTanggal, // Sekarang mengambil dari input manual
+            tanggal: inputTanggal,
             ket: inputKet,
             saldo: inputSaldo
         };
@@ -192,13 +246,12 @@
             });
             location.reload(); 
         } catch (error) {
-            alert("Terjadi kesalahan sistem saat menyimpan data.");
-            tombol.innerText = sedangEdit ? "Update Transaksi" : "Simpan Transaksi";
+            alert("Gagal menyimpan data.");
+            tombol.innerText = sedangEdit ? "Update" : "Simpan";
             tombol.disabled = false;
         }
     }
 
-    // Persiapan saat tombol Edit ditekan
     function siapkanEdit(rowIndex, id, jenis, tglAsli, ket, nominal) {
         sedangEdit = true;
         editRowIndex = rowIndex;
@@ -208,19 +261,15 @@
         document.getElementById('ket').value = ket;
         document.getElementById('saldo').value = nominal;
 
-        // Ubah format tanggal dari Spreadsheet (ISO/String) menjadi YYYY-MM-DD agar terbaca oleh input kalender
         if (tglAsli) {
             const d = new Date(tglAsli);
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            document.getElementById('tanggal').value = `${yyyy}-${mm}-${dd}`;
+            document.getElementById('tanggal').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
-        document.getElementById('btnSimpan').innerText = "Update Transaksi";
-        document.getElementById('btnSimpan').style.background = "#f59e0b"; 
-        document.getElementById('btnBatalEdit').style.display = "inline-block";
-        
+        const btnSimpan = document.getElementById('btnSimpan');
+        btnSimpan.innerText = "Update Transaksi";
+        btnSimpan.className = "btn-warning"; 
+        document.getElementById('btnBatalEdit').style.display = "inline-flex";
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -230,15 +279,15 @@
         editId = null;
         document.getElementById('ket').value = "";
         document.getElementById('saldo').value = "";
-        setTanggalHariIni(); // Kembalikan ke tanggal hari ini
-        document.getElementById('btnSimpan').innerText = "Simpan Transaksi";
-        document.getElementById('btnSimpan').style.background = "#0284c7";
+        setTanggalHariIni();
+        const btnSimpan = document.getElementById('btnSimpan');
+        btnSimpan.innerText = "Simpan";
+        btnSimpan.className = "btn-primary";
         document.getElementById('btnBatalEdit').style.display = "none";
     }
 
-    // Fungsi Hapus Data
     async function hapusData(rowIndex) {
-        if (confirm("Apakah Anda yakin ingin menghapus data ini? Aksi ini tidak dapat dibatalkan.")) {
+        if (confirm("Hapus data ini secara permanen?")) {
             try {
                 await fetch(API_URL, {
                     method: 'POST',
@@ -246,22 +295,15 @@
                     body: JSON.stringify({ action: 'delete', rowIndex: rowIndex })
                 });
                 location.reload();
-            } catch (error) {
-                alert("Gagal menghapus data.");
-            }
+            } catch (error) { alert("Gagal menghapus."); }
         }
     }
 
-    // Login & Logout
     function login() {
-        const u = document.getElementById('user').value;
-        const p = document.getElementById('pass').value;
-        if (u === "admin" && p === "admin123") {
+        if (document.getElementById('user').value === "admin" && document.getElementById('pass').value === "admin123") {
             localStorage.setItem('isLoggedIn', 'true');
             location.reload();
-        } else {
-            alert("Username atau Password salah!");
-        }
+        } else { alert("User/Password salah!"); }
     }
 
     function logout() {
@@ -269,14 +311,9 @@
         location.reload();
     }
 
-    document.getElementById('pass').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') login();
-    });
-    document.getElementById('user').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('pass').focus();
-    });
+    document.getElementById('pass').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+    document.getElementById('user').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('pass').focus(); });
 
-    // Export PDF
     function exportPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -292,21 +329,23 @@
         }
 
         doc.setFont("helvetica", "bold");
-        doc.text("LAPORAN ARUS KAS", 105, 15, { align: "center" });
+        // Judul laporan PDF sekarang lebih relevan
+        doc.text("LAPORAN ARUS KAS - LEORIA TOUR & TRAVEL", 105, 15, { align: "center" });
         
         doc.autoTable({ 
             html: '#kasTable', 
             startY: 25,
             theme: 'grid',
-            headStyles: { fillColor: [2, 132, 199] }
+            headStyles: { fillColor: [44, 62, 80] },
+            styles: { fontSize: 9 }
         });
         
         const finalY = doc.lastAutoTable.finalY || 100;
         doc.setFont("courier", "italic");
-        doc.setTextColor(100, 100, 100);
+        doc.setTextColor(150, 150, 150);
         doc.text("CREATED BY SOFYAN GANTENG", 105, finalY + 15, { align: "center" });
         
-        doc.save('Laporan_Arus_Kas.pdf');
+        doc.save('Laporan_Kas_Leoria.pdf');
         
         if (isAksiVisible) {
             thAksi.style.display = 'table-cell';
@@ -316,11 +355,10 @@
         }
     }
 
-    // Inisialisasi awal saat halaman dibuka
     if (localStorage.getItem('isLoggedIn') === 'true') {
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('loginBox').style.display = 'none';
-        setTanggalHariIni(); // Atur kalender otomatis ke hari ini saat login
+        setTanggalHariIni();
     }
     
     muatData();
