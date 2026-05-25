@@ -42,6 +42,8 @@
             <button class="btn-danger" onclick="logout()">Logout</button>
         </div>
         <div>
+            <input type="date" id="tanggal" title="Pilih Tanggal Transaksi">
+            
             <select id="jenis">
                 <option value="Pemasukan">Pemasukan</option>
                 <option value="Pengeluaran">Pengeluaran</option>
@@ -73,14 +75,15 @@
 </div>
 
 <script>
-    // 1. PENGATURAN DASAR
+    // MASUKKAN URL WEB APP ANDA DI BAWAH INI (JANGAN LUPA TANDA KUTIP)
     const API_URL = "https://script.google.com/macros/s/AKfycbzfmmj1ujJaw_vn8XKsqsg-thG125cOzQVkF-a1zOP6J8nbrjiZAkJXln4M44CzsxC_Dg/exec"; 
     
     // Format mata uang Rupiah
     const formatRp = (angka) => new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(angka);
     
-    // Format tanggal menjadi DD/Bulan/YYYY
+    // Format tanggal untuk Tampilan Tabel (DD Bulan YYYY)
     function formatTanggal(tglString) {
+        if (!tglString) return "-";
         const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
         const d = new Date(tglString);
         return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
@@ -91,13 +94,21 @@
     let editRowIndex = null;
     let editId = null;
 
-    // 2. FUNGSI MENGAMBIL DAN MENAMPILKAN DATA
+    // Set nilai default input tanggal menjadi hari ini
+    function setTanggalHariIni() {
+        const today = new Date();
+        // Format ke YYYY-MM-DD khusus untuk input type="date"
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('tanggal').value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Mengambil dan menampilkan data dari Google Sheets
     async function muatData() {
         try {
-            // Memanggil API Google
             const response = await fetch(API_URL, {
                 method: 'POST',
-                // Trik: Menggunakan text/plain mencegah browser melakukan preflight OPTIONS yang rumit
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'read' })
             });
@@ -106,28 +117,21 @@
             const tbody = document.querySelector('#kasTable tbody');
             const isAdmin = localStorage.getItem('isLoggedIn') === 'true';
             
-            // Atur tampilan Header Aksi
             document.getElementById('aksiHeader').style.display = isAdmin ? 'table-cell' : 'none';
             
             let saldoBerjalan = 0;
             let barisHTML = '';
 
-            // Proses setiap baris data dari Google Sheet
             data.forEach((baris, index) => {
-                // baris[0]=ID, baris[1]=Jenis, baris[2]=Tanggal, baris[3]=Ket, baris[4]=Saldo
                 const nominal = parseInt(baris[4]) || 0;
                 
-                // Hitung kumulatif saldo
                 if (baris[1] === "Pemasukan") {
                     saldoBerjalan += nominal;
                 } else {
                     saldoBerjalan -= nominal;
                 }
 
-                // Warna kuning pucat untuk pengeluaran
                 const warnaLatar = baris[1] === 'Pengeluaran' ? '#fef9c3' : 'transparent';
-                
-                // rowIndex spreadsheet: index array + 2 (karena array mulai dari 0, dan baris 1 adalah header)
                 const rowIndex = index + 2; 
 
                 barisHTML += `
@@ -139,15 +143,13 @@
                     <td style="font-weight: bold;">${formatRp(saldoBerjalan)}</td>
                     ${isAdmin ? `
                     <td>
-                        <button class="btn-edit" onclick="siapkanEdit(${rowIndex}, '${baris[0]}', '${baris[1]}', '${baris[3]}', ${nominal})">Edit</button>
+                        <button class="btn-edit" onclick="siapkanEdit(${rowIndex}, '${baris[0]}', '${baris[1]}', '${baris[2]}', '${baris[3]}', ${nominal})">Edit</button>
                         <button class="btn-delete" onclick="hapusData(${rowIndex})">Hapus</button>
                     </td>` : ''}
                 </tr>`;
             });
 
-            // Jika data kosong
             if (data.length === 0) barisHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada data transaksi.</td></tr>';
-            
             tbody.innerHTML = barisHTML;
 
         } catch (error) {
@@ -156,15 +158,15 @@
         }
     }
 
-    // 3. FUNGSI TAMBAH DAN UPDATE DATA
+    // Fungsi Tambah atau Update Data
     async function tambahData() {
+        const inputTanggal = document.getElementById('tanggal').value;
         const inputJenis = document.getElementById('jenis').value;
         const inputKet = document.getElementById('ket').value;
         const inputSaldo = document.getElementById('saldo').value;
 
-        // Validasi agar form tidak kosong
-        if (!inputKet || !inputSaldo) {
-            alert("Keterangan dan Nominal wajib diisi!");
+        if (!inputTanggal || !inputKet || !inputSaldo) {
+            alert("Tanggal, Keterangan, dan Nominal wajib diisi!");
             return;
         }
 
@@ -172,13 +174,12 @@
         tombol.innerText = "Memproses...";
         tombol.disabled = true;
 
-        // Payload (paket data) yang dikirim ke Google Apps Script
         const payload = {
             action: sedangEdit ? 'edit' : 'add',
             rowIndex: editRowIndex,
             id: sedangEdit ? editId : new Date().getTime(),
             jenis: inputJenis,
-            tanggal: new Date().toISOString(), // Tanggal saat ini
+            tanggal: inputTanggal, // Sekarang mengambil dari input manual
             ket: inputKet,
             saldo: inputSaldo
         };
@@ -189,7 +190,6 @@
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
             });
-            // Refresh halaman agar data terbaru muncul
             location.reload(); 
         } catch (error) {
             alert("Terjadi kesalahan sistem saat menyimpan data.");
@@ -198,23 +198,29 @@
         }
     }
 
-    // 4. FUNGSI PERSIAPAN EDIT
-    function siapkanEdit(rowIndex, id, jenis, ket, nominal) {
+    // Persiapan saat tombol Edit ditekan
+    function siapkanEdit(rowIndex, id, jenis, tglAsli, ket, nominal) {
         sedangEdit = true;
         editRowIndex = rowIndex;
         editId = id;
 
-        // Masukkan data lama ke dalam input form
         document.getElementById('jenis').value = jenis;
         document.getElementById('ket').value = ket;
         document.getElementById('saldo').value = nominal;
 
-        // Ubah tombol
+        // Ubah format tanggal dari Spreadsheet (ISO/String) menjadi YYYY-MM-DD agar terbaca oleh input kalender
+        if (tglAsli) {
+            const d = new Date(tglAsli);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            document.getElementById('tanggal').value = `${yyyy}-${mm}-${dd}`;
+        }
+
         document.getElementById('btnSimpan').innerText = "Update Transaksi";
-        document.getElementById('btnSimpan').style.background = "#f59e0b"; // Warna orange
+        document.getElementById('btnSimpan').style.background = "#f59e0b"; 
         document.getElementById('btnBatalEdit').style.display = "inline-block";
         
-        // Scroll ke atas agar user melihat form
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -224,12 +230,13 @@
         editId = null;
         document.getElementById('ket').value = "";
         document.getElementById('saldo').value = "";
+        setTanggalHariIni(); // Kembalikan ke tanggal hari ini
         document.getElementById('btnSimpan').innerText = "Simpan Transaksi";
         document.getElementById('btnSimpan').style.background = "#0284c7";
         document.getElementById('btnBatalEdit').style.display = "none";
     }
 
-    // 5. FUNGSI HAPUS DATA
+    // Fungsi Hapus Data
     async function hapusData(rowIndex) {
         if (confirm("Apakah Anda yakin ingin menghapus data ini? Aksi ini tidak dapat dibatalkan.")) {
             try {
@@ -245,7 +252,7 @@
         }
     }
 
-    // 6. FUNGSI LOGIN & LOGOUT
+    // Login & Logout
     function login() {
         const u = document.getElementById('user').value;
         const p = document.getElementById('pass').value;
@@ -262,7 +269,6 @@
         location.reload();
     }
 
-    // Deteksi tombol Enter pada form login
     document.getElementById('pass').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') login();
     });
@@ -270,12 +276,11 @@
         if (e.key === 'Enter') document.getElementById('pass').focus();
     });
 
-    // 7. FUNGSI EXPORT PDF
+    // Export PDF
     function exportPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        // Sembunyikan kolom "Aksi" jika sedang login sebagai admin
         const thAksi = document.getElementById('aksiHeader');
         const isAksiVisible = thAksi.style.display !== 'none';
         
@@ -286,11 +291,9 @@
             });
         }
 
-        // Tulis Judul PDF
         doc.setFont("helvetica", "bold");
         doc.text("LAPORAN ARUS KAS", 105, 15, { align: "center" });
         
-        // Render Tabel
         doc.autoTable({ 
             html: '#kasTable', 
             startY: 25,
@@ -298,16 +301,13 @@
             headStyles: { fillColor: [2, 132, 199] }
         });
         
-        // Tulis Footer Khusus
         const finalY = doc.lastAutoTable.finalY || 100;
         doc.setFont("courier", "italic");
         doc.setTextColor(100, 100, 100);
         doc.text("CREATED BY SOFYAN GANTENG", 105, finalY + 15, { align: "center" });
         
-        // Unduh File
         doc.save('Laporan_Arus_Kas.pdf');
         
-        // Kembalikan tampilan kolom Aksi setelah PDF selesai dibuat
         if (isAksiVisible) {
             thAksi.style.display = 'table-cell';
             document.querySelectorAll('#kasTable tbody tr').forEach(tr => {
@@ -316,13 +316,13 @@
         }
     }
 
-    // 8. INISIALISASI SAAT HALAMAN DIBUKA
+    // Inisialisasi awal saat halaman dibuka
     if (localStorage.getItem('isLoggedIn') === 'true') {
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('loginBox').style.display = 'none';
+        setTanggalHariIni(); // Atur kalender otomatis ke hari ini saat login
     }
     
-    // Mulai tarik data dari spreadsheet
     muatData();
 </script>
 </body>
