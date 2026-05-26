@@ -134,7 +134,12 @@
     // MASUKKAN URL WEB APP ANDA DI SINI
     const API_URL = "https://script.google.com/macros/s/AKfycbzfmmj1ujJaw_vn8XKsqsg-thG125cOzQVkF-a1zOP6J8nbrjiZAkJXln4M44CzsxC_Dg/exec"; 
     
-    const formatRp = (angka) => new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(angka);
+    const formatRp = (angka) => new Intl.NumberFormat('id-ID', {
+    style: 'currency', 
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+}).format(angka);
     
     function formatTanggal(tglString) {
         if (!tglString) return "-";
